@@ -10,7 +10,7 @@ package class119;
 // 1 <= m <= 5 * 10^5
 // 测试链接 : https://www.luogu.com.cn/problem/P4281
 // 如下实现是正确的，但是洛谷平台对空间卡的很严，只有使用C++能全部通过
-// C++版本就是本节代码中的Code04_EmergencyAssembly2文件
+// C++版本就是本节代码中的Code01_EmergencyAssembly2文件
 // C++版本和java版本逻辑完全一样，但只有C++版本可以通过所有测试用例
 // 这是洛谷平台没有照顾各种语言的实现所导致的
 // 在真正笔试、比赛时，一定是兼顾各种语言的，该实现是一定正确的
@@ -24,7 +24,7 @@ import java.io.PrintWriter;
 import java.io.StreamTokenizer;
 import java.util.Arrays;
 
-public class Code04_EmergencyAssembly1 {
+public class Code01_EmergencyAssembly1 {
 
 	public static int MAXN = 500001;
 
@@ -40,9 +40,9 @@ public class Code04_EmergencyAssembly1 {
 
 	public static int cnt;
 
-	public static int[][] stjump = new int[MAXN][LIMIT];
-
 	public static int[] deep = new int[MAXN];
+
+	public static int[][] stjump = new int[MAXN][LIMIT];
 
 	public static int togather;
 
@@ -138,9 +138,12 @@ public class Code04_EmergencyAssembly1 {
 	}
 
 	public static void compute(int a, int b, int c) {
+		// 来自对结构关系的深入分析，课上重点解释
 		int h1 = lca(a, b), h2 = lca(a, c), h3 = lca(b, c);
-		togather = h1 == h2 ? h3 : (h1 == h3 ? h2 : h1);
-		cost = (long) deep[a] + deep[b] + deep[c] - deep[h1] - deep[h2] - deep[h3];
+		int high = h1 != h2 ? (deep[h1] < deep[h2] ? h1 : h2) : h1;
+		int low = h1 != h2 ? (deep[h1] > deep[h2] ? h1 : h2) : h3;
+		togather = low;
+		cost = (long) deep[a] + deep[b] + deep[c] - deep[high] * 2 - deep[low];
 	}
 
 }
