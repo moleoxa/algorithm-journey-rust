@@ -19,6 +19,7 @@ public class Code03_QueryPathMinimumChangesToSame {
 
 	public static int MAXW = 26;
 
+	// 链式前向星建图
 	public static int[] headEdge = new int[MAXN];
 
 	public static int[] edgeNext = new int[MAXN << 1];
@@ -29,6 +30,10 @@ public class Code03_QueryPathMinimumChangesToSame {
 
 	public static int tcnt;
 
+	// weightCnt[i][w] : 从头节点到i的路径中，权值为w的边有几条
+	public static int[][] weightCnt = new int[MAXN][MAXW + 1];
+
+	// 以下所有的结构都是为了tarjan算法做准备
 	public static int[] headQuery = new int[MAXN];
 
 	public static int[] queryNext = new int[MAXM << 1];
@@ -39,35 +44,38 @@ public class Code03_QueryPathMinimumChangesToSame {
 
 	public static int qcnt;
 
-	public static int[][] stcnt = new int[MAXN][MAXW + 1];
-
 	public static boolean[] visited = new boolean[MAXN];
 
 	public static int[] father = new int[MAXN];
 
 	public static int[] lca = new int[MAXM];
 
-	public int[] minOperationsQueries(int n, int[][] edges, int[][] queries) {
+	public static int[] minOperationsQueries(int n, int[][] edges, int[][] queries) {
 		build(n);
 		for (int[] edge : edges) {
 			addEdge(edge[0], edge[1], edge[2]);
 			addEdge(edge[1], edge[0], edge[2]);
 		}
+		// 从头节点到每个节点的边权值词频统计
+		dfs(0, 0, -1);
 		int m = queries.length;
 		for (int i = 0; i < m; i++) {
 			addQuery(queries[i][0], queries[i][1], i);
 			addQuery(queries[i][1], queries[i][0], i);
 		}
-		tarjan(0, 0, -1);
+		// 得到每个查询的最低公共祖先
+		tarjan(0, -1);
 		int[] ans = new int[m];
-		for (int i = 0; i < m; i++) {
-			int allCnt = 0, maxCnt = 0, pathCnt;
-			for (int j = 1; j <= MAXW; j++) {
-				// 特别重要的结论
-				// 很多题可以用到
-				pathCnt = stcnt[queries[i][0]][j] + stcnt[queries[i][1]][j] - 2 * stcnt[lca[i]][j];
-				maxCnt = Math.max(maxCnt, pathCnt);
-				allCnt += pathCnt;
+		for (int i = 0, a, b, c; i < m; i++) {
+			a = queries[i][0];
+			b = queries[i][1];
+			c = lca[i];
+			int allCnt = 0; // 从a到b的路，所有权值的边一共多少条
+			int maxCnt = 0; // 从a到b的路，权值重复最多的次数
+			for (int w = 1, wcnt; w <= MAXW; w++) { // 所有权值枚举一遍
+				wcnt = weightCnt[a][w] + weightCnt[b][w] - 2 * weightCnt[c][w];
+				maxCnt = Math.max(maxCnt, wcnt);
+				allCnt += wcnt;
 			}
 			ans[i] = allCnt - maxCnt;
 		}
@@ -91,6 +99,25 @@ public class Code03_QueryPathMinimumChangesToSame {
 		headEdge[u] = tcnt++;
 	}
 
+	// 当前来到u节点，父亲节点f，从f到u权重为w
+	// 统计从头节点到u节点，每种权值的边有多少条
+	// 信息存放在weightCnt[u][1..26]里
+	public static void dfs(int u, int w, int f) {
+		if (u == 0) {
+			Arrays.fill(weightCnt[u], 0);
+		} else {
+			for (int i = 1; i <= MAXW; i++) {
+				weightCnt[u][i] = weightCnt[f][i];
+			}
+			weightCnt[u][w]++;
+		}
+		for (int e = headEdge[u]; e != 0; e = edgeNext[e]) {
+			if (edgeTo[e] != f) {
+				dfs(edgeTo[e], edgeValue[e], u);
+			}
+		}
+	}
+
 	public static void addQuery(int u, int v, int i) {
 		queryNext[qcnt] = headQuery[u];
 		queryTo[qcnt] = v;
@@ -98,26 +125,12 @@ public class Code03_QueryPathMinimumChangesToSame {
 		headQuery[u] = qcnt++;
 	}
 
-	public static int find(int i) {
-		if (i != father[i]) {
-			father[i] = find(father[i]);
-		}
-		return father[i];
-	}
-
-	public void tarjan(int u, int w, int f) {
+	// tarjan算法批量查询两点的最低公共祖先
+	public static void tarjan(int u, int f) {
 		visited[u] = true;
-		if (u == 0) {
-			Arrays.fill(stcnt[u], 0);
-		} else {
-			for (int i = 1; i <= MAXW; i++) {
-				stcnt[u][i] = stcnt[f][i];
-			}
-			stcnt[u][w]++;
-		}
 		for (int e = headEdge[u]; e != 0; e = edgeNext[e]) {
 			if (edgeTo[e] != f) {
-				tarjan(edgeTo[e], edgeValue[e], u);
+				tarjan(edgeTo[e], u);
 			}
 		}
 		for (int e = headQuery[u], v; e != 0; e = queryNext[e]) {
@@ -127,6 +140,13 @@ public class Code03_QueryPathMinimumChangesToSame {
 			}
 		}
 		father[u] = f;
+	}
+
+	public static int find(int i) {
+		if (i != father[i]) {
+			father[i] = find(father[i]);
+		}
+		return father[i];
 	}
 
 }

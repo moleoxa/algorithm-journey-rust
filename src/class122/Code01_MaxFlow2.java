@@ -1,8 +1,10 @@
-package class118;
+package class122;
 
-// 树上倍增解法迭代版
-// 测试链接 : https://www.luogu.com.cn/problem/P3379
-// 所有递归函数一律改成等义的迭代版
+// 树上点差分模版(迭代版)
+// 有n个节点形成一棵树，一开始所有点权都是0
+// 给定很多操作，每个操作(a,b)表示从a到b路径上所有点的点权增加1
+// 所有操作完成后，返回树上的最大点权
+// 测试链接 : https://www.luogu.com.cn/problem/P3128
 // 提交以下的code，提交时请把类名改成"Main"，可以通过所有用例
 
 import java.io.BufferedReader;
@@ -13,11 +15,11 @@ import java.io.PrintWriter;
 import java.io.StreamTokenizer;
 import java.util.Arrays;
 
-public class Code02_Multiply2 {
+public class Code01_MaxFlow2 {
 
-	public static int MAXN = 500001;
+	public static int MAXN = 50001;
 
-	public static int LIMIT = 20;
+	public static int LIMIT = 16;
 
 	public static int power;
 
@@ -29,7 +31,7 @@ public class Code02_Multiply2 {
 		return ans;
 	}
 
-	public static int cnt;
+	public static int[] num = new int[MAXN];
 
 	public static int[] head = new int[MAXN];
 
@@ -37,12 +39,15 @@ public class Code02_Multiply2 {
 
 	public static int[] to = new int[MAXN << 1];
 
-	public static int[][] stjump = new int[MAXN][LIMIT];
+	public static int cnt;
 
 	public static int[] deep = new int[MAXN];
 
+	public static int[][] stjump = new int[MAXN][LIMIT];
+
 	public static void build(int n) {
 		power = log2(n);
+		Arrays.fill(num, 1, n + 1, 0);
 		cnt = 1;
 		Arrays.fill(head, 1, n + 1, 0);
 	}
@@ -53,8 +58,8 @@ public class Code02_Multiply2 {
 		head[u] = cnt++;
 	}
 
-	// dfs迭代版
-	// nfe是为了实现迭代版而准备的栈
+	// dfs1方法的递归版改迭代版
+	// 不会改看讲解118，讲了怎么从递归版改成迭代版
 	public static int[][] ufe = new int[MAXN][3];
 
 	public static int stackSize, u, f, e;
@@ -73,14 +78,8 @@ public class Code02_Multiply2 {
 		e = ufe[stackSize][2];
 	}
 
-	public static void dfs(int root) {
+	public static void dfs1(int root) {
 		stackSize = 0;
-		// 栈里存放三个信息
-		// u : 当前处理的点
-		// f : 当前点u的父节点
-		// e : 处理到几号边了
-		// 如果e==-1，表示之前没有处理过u的任何边
-		// 如果e==0，表示u的边都已经处理完了
 		push(root, 0, -1);
 		while (stackSize > 0) {
 			pop();
@@ -126,17 +125,43 @@ public class Code02_Multiply2 {
 		return stjump[a][0];
 	}
 
+	// dfs2方法的递归版改迭代版
+	// 不会改看讲解118，讲了怎么从递归版改成迭代版
+	public static void dfs2(int root) {
+		stackSize = 0;
+		push(root, 0, -1);
+		while (stackSize > 0) {
+			pop();
+			if (e == -1) {
+				e = head[u];
+			} else {
+				e = next[e];
+			}
+			if (e != 0) {
+				push(u, f, e);
+				if (to[e] != f) {
+					push(to[e], u, -1);
+				}
+			} else {
+				for (int e = head[u], v; e != 0; e = next[e]) {
+					v = to[e];
+					if (v != f) {
+						num[u] += num[v];
+					}
+				}
+			}
+		}
+	}
+
 	public static void main(String[] args) throws IOException {
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 		StreamTokenizer in = new StreamTokenizer(br);
 		PrintWriter out = new PrintWriter(new OutputStreamWriter(System.out));
 		in.nextToken();
 		int n = (int) in.nval;
+		build(n);
 		in.nextToken();
 		int m = (int) in.nval;
-		in.nextToken();
-		int root = (int) in.nval;
-		build(n);
 		for (int i = 1, u, v; i < n; i++) {
 			in.nextToken();
 			u = (int) in.nval;
@@ -145,14 +170,25 @@ public class Code02_Multiply2 {
 			addEdge(u, v);
 			addEdge(v, u);
 		}
-		dfs(root);
-		for (int i = 1, a, b; i <= m; i++) {
+		dfs1(1);
+		for (int i = 1, u, v, lca, lcafather; i <= m; i++) {
 			in.nextToken();
-			a = (int) in.nval;
+			u = (int) in.nval;
 			in.nextToken();
-			b = (int) in.nval;
-			out.println(lca(a, b));
+			v = (int) in.nval;
+			lca = lca(u, v);
+			lcafather = stjump[lca][0];
+			num[u]++;
+			num[v]++;
+			num[lca]--;
+			num[lcafather]--;
 		}
+		dfs2(1);
+		int max = 0;
+		for (int i = 1; i <= n; i++) {
+			max = Math.max(max, num[i]);
+		}
+		out.println(max);
 		out.flush();
 		out.close();
 		br.close();

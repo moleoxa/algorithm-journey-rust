@@ -1,8 +1,11 @@
-package class118;
+package class122;
 
-// 树上倍增解法迭代版
-// 测试链接 : https://www.luogu.com.cn/problem/P3379
-// 所有递归函数一律改成等义的迭代版
+// 边差分实战
+// 使图不联通的方法数
+// 有n个节点，给定n-1条老边使其连接成一棵树，再给定m条新边额外加在树上
+// 你可以切断两条边让这个图不联通，切断的两条边必须是一条老边和一条新边
+// 返回方法数
+// 测试链接 : http://poj.org/problem?id=3417
 // 提交以下的code，提交时请把类名改成"Main"，可以通过所有用例
 
 import java.io.BufferedReader;
@@ -13,11 +16,11 @@ import java.io.PrintWriter;
 import java.io.StreamTokenizer;
 import java.util.Arrays;
 
-public class Code02_Multiply2 {
+public class Code04_Network {
 
-	public static int MAXN = 500001;
+	public static int MAXN = 100001;
 
-	public static int LIMIT = 20;
+	public static int LIMIT = 17;
 
 	public static int power;
 
@@ -29,7 +32,9 @@ public class Code02_Multiply2 {
 		return ans;
 	}
 
-	public static int cnt;
+	public static int n, m;
+
+	public static int[] num = new int[MAXN];
 
 	public static int[] head = new int[MAXN];
 
@@ -37,14 +42,20 @@ public class Code02_Multiply2 {
 
 	public static int[] to = new int[MAXN << 1];
 
-	public static int[][] stjump = new int[MAXN][LIMIT];
+	public static int cnt;
 
 	public static int[] deep = new int[MAXN];
 
-	public static void build(int n) {
+	public static int[][] stjump = new int[MAXN][LIMIT];
+
+	public static int ans;
+
+	public static void build() {
 		power = log2(n);
+		Arrays.fill(num, 1, n + 1, 0);
 		cnt = 1;
 		Arrays.fill(head, 1, n + 1, 0);
+		ans = 0;
 	}
 
 	public static void addEdge(int u, int v) {
@@ -53,52 +64,15 @@ public class Code02_Multiply2 {
 		head[u] = cnt++;
 	}
 
-	// dfs迭代版
-	// nfe是为了实现迭代版而准备的栈
-	public static int[][] ufe = new int[MAXN][3];
-
-	public static int stackSize, u, f, e;
-
-	public static void push(int u, int f, int e) {
-		ufe[stackSize][0] = u;
-		ufe[stackSize][1] = f;
-		ufe[stackSize][2] = e;
-		stackSize++;
-	}
-
-	public static void pop() {
-		--stackSize;
-		u = ufe[stackSize][0];
-		f = ufe[stackSize][1];
-		e = ufe[stackSize][2];
-	}
-
-	public static void dfs(int root) {
-		stackSize = 0;
-		// 栈里存放三个信息
-		// u : 当前处理的点
-		// f : 当前点u的父节点
-		// e : 处理到几号边了
-		// 如果e==-1，表示之前没有处理过u的任何边
-		// 如果e==0，表示u的边都已经处理完了
-		push(root, 0, -1);
-		while (stackSize > 0) {
-			pop();
-			if (e == -1) {
-				deep[u] = deep[f] + 1;
-				stjump[u][0] = f;
-				for (int p = 1; p <= power; p++) {
-					stjump[u][p] = stjump[stjump[u][p - 1]][p - 1];
-				}
-				e = head[u];
-			} else {
-				e = next[e];
-			}
-			if (e != 0) {
-				push(u, f, e);
-				if (to[e] != f) {
-					push(to[e], u, -1);
-				}
+	public static void dfs1(int u, int f) {
+		deep[u] = deep[f] + 1;
+		stjump[u][0] = f;
+		for (int p = 1; p <= power; p++) {
+			stjump[u][p] = stjump[stjump[u][p - 1]][p - 1];
+		}
+		for (int e = head[u]; e != 0; e = next[e]) {
+			if (to[e] != f) {
+				dfs1(to[e], u);
 			}
 		}
 	}
@@ -126,17 +100,31 @@ public class Code02_Multiply2 {
 		return stjump[a][0];
 	}
 
+	public static void dfs2(int u, int f) {
+		for (int e = head[u], v; e != 0; e = next[e]) {
+			v = to[e];
+			if (v != f) {
+				dfs2(v, u);
+			}
+		}
+		for (int e = head[u], v; e != 0; e = next[e]) {
+			v = to[e];
+			if (v != f) {
+				ans += num[v] == 0 ? m : (num[v] == 1 ? 1 : 0);
+				num[u] += num[v];
+			}
+		}
+	}
+
 	public static void main(String[] args) throws IOException {
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 		StreamTokenizer in = new StreamTokenizer(br);
 		PrintWriter out = new PrintWriter(new OutputStreamWriter(System.out));
 		in.nextToken();
-		int n = (int) in.nval;
+		n = (int) in.nval;
+		build();
 		in.nextToken();
-		int m = (int) in.nval;
-		in.nextToken();
-		int root = (int) in.nval;
-		build(n);
+		m = (int) in.nval;
 		for (int i = 1, u, v; i < n; i++) {
 			in.nextToken();
 			u = (int) in.nval;
@@ -145,14 +133,19 @@ public class Code02_Multiply2 {
 			addEdge(u, v);
 			addEdge(v, u);
 		}
-		dfs(root);
-		for (int i = 1, a, b; i <= m; i++) {
+		dfs1(1, 0);
+		for (int i = 1, u, v, lca; i <= m; i++) {
 			in.nextToken();
-			a = (int) in.nval;
+			u = (int) in.nval;
 			in.nextToken();
-			b = (int) in.nval;
-			out.println(lca(a, b));
+			v = (int) in.nval;
+			lca = lca(u, v);
+			num[u]++;
+			num[v]++;
+			num[lca] -= 2;
 		}
+		dfs2(1, 0);
+		out.println(ans);
 		out.flush();
 		out.close();
 		br.close();

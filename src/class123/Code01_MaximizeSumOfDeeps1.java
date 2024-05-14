@@ -1,12 +1,10 @@
-package class120;
+package class123;
 
-// 教父
-// 一共有n个节点，编号1~n，有n-1条边形成一棵树
-// 返回所有重心点
-// 树的重心第二种求解方式
-// 以某个节点为根时，每颗子树的节点数不超过总节点数的一半，那么这个节点是重心
-// 测试链接 : http://poj.org/problem?id=3107
-// 提交以下的code，提交时请把类名改成"Main"，可以直接通过
+// 所有节点深度之和最大(递归版)
+// 测试链接 : https://www.luogu.com.cn/problem/P3478
+// 提交以下的code，提交时请把类名改成"Main"
+// C++这么写能通过，java会因为递归层数太多而爆栈
+// java能通过的写法参考本节课Code01_MaximizeSumOfDeeps2文件
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -16,9 +14,9 @@ import java.io.PrintWriter;
 import java.io.StreamTokenizer;
 import java.util.Arrays;
 
-public class Code02_Godfather {
+public class Code01_MaximizeSumOfDeeps1 {
 
-	public static int MAXN = 50001;
+	public static int MAXN = 1000001;
 
 	public static int n;
 
@@ -32,11 +30,14 @@ public class Code02_Godfather {
 
 	public static int[] size = new int[MAXN];
 
-	public static int[] maxsub = new int[MAXN];
+	public static int[] deep = new int[MAXN];
+
+	public static long[] sum = new long[MAXN];
 
 	public static void build() {
 		cnt = 1;
 		Arrays.fill(head, 1, n + 1, 0);
+		sum[0] = 0;
 	}
 
 	public static void addEdge(int u, int v) {
@@ -45,18 +46,32 @@ public class Code02_Godfather {
 		head[u] = cnt++;
 	}
 
-	public static void dfs(int u, int f) {
-		size[u] = 1;
-		maxsub[u] = 0;
+	public static void dfs1(int u, int f) {
 		for (int e = head[u], v; e != 0; e = next[e]) {
 			v = to[e];
 			if (v != f) {
-				dfs(v, u);
-				size[u] += size[v];
-				maxsub[u] = Math.max(maxsub[u], size[v]);
+				dfs1(v, u);
 			}
 		}
-		maxsub[u] = Math.max(maxsub[u], n - size[u]);
+		size[u] = 1;
+		deep[u] = deep[f] + 1;
+		for (int e = head[u], v; e != 0; e = next[e]) {
+			v = to[e];
+			if (v != f) {
+				size[u] += size[v];
+			}
+		}
+	}
+
+	public static void dfs2(int u, int f) {
+		// 这一句是换根最核心的逻辑
+		sum[u] = sum[f] - size[u] + (n - size[u]);
+		for (int e = head[u], v; e != 0; e = next[e]) {
+			v = to[e];
+			if (v != f) {
+				dfs2(v, u);
+			}
+		}
 	}
 
 	public static void main(String[] args) throws IOException {
@@ -74,19 +89,20 @@ public class Code02_Godfather {
 			addEdge(u, v);
 			addEdge(v, u);
 		}
-		dfs(1, 0);
-		int m = 0;
-		int[] centers = new int[2];
+		dfs1(1, 0);
 		for (int i = 1; i <= n; i++) {
-			if (maxsub[i] <= n / 2) {
-				centers[m++] = i;
+			sum[0] += deep[i] + 1;
+		}
+		dfs2(1, 0);
+		long max = sum[1];
+		int ans = 1;
+		for (int i = 2; i <= n; i++) {
+			if (sum[i] > max) {
+				max = sum[i];
+				ans = i;
 			}
 		}
-		if (m == 1) {
-			out.println(centers[0]);
-		} else { // m == 2
-			out.println(centers[0] + " " + centers[1]);
-		}
+		out.println(ans);
 		out.flush();
 		out.close();
 		br.close();

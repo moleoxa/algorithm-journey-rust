@@ -1,8 +1,9 @@
 package class121;
 
-// 树的直径模版
-// 树型dp的方法，可以通过所有的用例
+// 树的直径模版(树型dp)
+// 给定一棵树，边权可能为负，求直径长度
 // 测试链接 : https://www.luogu.com.cn/problem/U81904
+// 提交以下的code，提交时请把类名改成"Main"，可以通过所有的用例
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -28,14 +29,17 @@ public class Code01_Diameter2 {
 
 	public static int cnt;
 
+	// dist[u] : 从u开始必须往下走，能走出的最大距离，可以不选任何边
 	public static int[] dist = new int[MAXN];
 
-	public static int diameter;
+	// ans[u] : 路径必须包含点u的情况下，最大路径和
+	public static int[] ans = new int[MAXN];
 
 	public static void build() {
 		cnt = 1;
 		Arrays.fill(head, 1, n + 1, 0);
-		diameter = Integer.MIN_VALUE;
+		Arrays.fill(dist, 1, n + 1, 0);
+		Arrays.fill(ans, 1, n + 1, 0);
 	}
 
 	public static void addEdge(int u, int v, int w) {
@@ -45,19 +49,18 @@ public class Code01_Diameter2 {
 		head[u] = cnt++;
 	}
 
-	public static void dfs(int u, int f) {
+	public static void dp(int u, int f) {
 		for (int e = head[u], v; e != 0; e = next[e]) {
 			v = to[e];
 			if (v != f) {
-				dfs(v, u);
+				dp(v, u);
 			}
 		}
-		for (int e = head[u], v, w; e != 0; e = next[e]) {
+		for (int e = head[u], v; e != 0; e = next[e]) {
 			v = to[e];
 			if (v != f) {
-				w = weight[e];
-				diameter = Math.max(diameter, dist[u] + dist[v] + w);
-				dist[u] = Math.max(dist[u], w + dist[v]);
+				ans[u] = Math.max(ans[u], dist[u] + dist[v] + weight[e]);
+				dist[u] = Math.max(dist[u], dist[v] + weight[e]);
 			}
 		}
 	}
@@ -79,7 +82,11 @@ public class Code01_Diameter2 {
 			addEdge(u, v, w);
 			addEdge(v, u, w);
 		}
-		dfs(1, 0);
+		dp(1, 0);
+		int diameter = Integer.MIN_VALUE;
+		for (int i = 1; i <= n; i++) {
+			diameter = Math.max(diameter, ans[i]);
+		}
 		out.println(diameter);
 		out.flush();
 		out.close();
