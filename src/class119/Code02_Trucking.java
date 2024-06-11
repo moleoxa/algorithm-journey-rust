@@ -38,8 +38,10 @@ public class Code02_Trucking {
 	// 并查集
 	public static int[] father = new int[MAXN];
 
-	public static int cnt;
+	// 给的树有可能是森林，所以需要判断节点是否访问过了
+	public static boolean[] visited = new boolean[MAXN];
 
+	// 最大生成树建图
 	public static int[] head = new int[MAXN];
 
 	public static int[] next = new int[MAXM << 1];
@@ -48,14 +50,15 @@ public class Code02_Trucking {
 
 	public static int[] weight = new int[MAXM << 1];
 
+	public static int cnt;
+
 	public static int[] deep = new int[MAXN];
 
+	// stjump[u][p] : u节点往上跳2的次方步，到达什么节点
 	public static int[][] stjump = new int[MAXN][LIMIT];
 
-	public static int[][] stweight = new int[MAXN][LIMIT];
-
-	// 给的树有可能是森林，所以需要判断节点是否访问过了
-	public static boolean[] visited = new boolean[MAXN];
+	// stmin[u][p] : u节点往上跳2的次方步的路径中，最小的权值
+	public static int[][] stmin = new int[MAXN][LIMIT];
 
 	public static int log2(int n) {
 		int ans = 0;
@@ -71,8 +74,8 @@ public class Code02_Trucking {
 		for (int i = 1; i <= n; i++) {
 			father[i] = i;
 		}
-		Arrays.fill(head, 1, n + 1, 0);
 		Arrays.fill(visited, 1, n + 1, false);
+		Arrays.fill(head, 1, n + 1, 0);
 	}
 
 	public static void kruskal(int n, int m) {
@@ -109,15 +112,15 @@ public class Code02_Trucking {
 		if (f == 0) {
 			deep[u] = 1;
 			stjump[u][0] = u;
-			stweight[u][0] = Integer.MAX_VALUE;
+			stmin[u][0] = Integer.MAX_VALUE;
 		} else {
 			deep[u] = deep[f] + 1;
 			stjump[u][0] = f;
-			stweight[u][0] = w;
+			stmin[u][0] = w;
 		}
-		for (int p = 1; (1 << p) <= deep[u]; p++) {
+		for (int p = 1; p <= power; p++) {
 			stjump[u][p] = stjump[stjump[u][p - 1]][p - 1];
-			stweight[u][p] = Math.min(stweight[u][p - 1], stweight[stjump[u][p - 1]][p - 1]);
+			stmin[u][p] = Math.min(stmin[u][p - 1], stmin[stjump[u][p - 1]][p - 1]);
 		}
 		for (int e = head[u]; e != 0; e = next[e]) {
 			if (!visited[to[e]]) {
@@ -138,7 +141,7 @@ public class Code02_Trucking {
 		int ans = Integer.MAX_VALUE;
 		for (int p = power; p >= 0; p--) {
 			if (deep[stjump[a][p]] >= deep[b]) {
-				ans = Math.min(ans, stweight[a][p]);
+				ans = Math.min(ans, stmin[a][p]);
 				a = stjump[a][p];
 			}
 		}
@@ -147,12 +150,12 @@ public class Code02_Trucking {
 		}
 		for (int p = power; p >= 0; p--) {
 			if (stjump[a][p] != stjump[b][p]) {
-				ans = Math.min(ans, Math.min(stweight[a][p], stweight[b][p]));
+				ans = Math.min(ans, Math.min(stmin[a][p], stmin[b][p]));
 				a = stjump[a][p];
 				b = stjump[b][p];
 			}
 		}
-		ans = Math.min(ans, Math.min(stweight[a][0], stweight[b][0]));
+		ans = Math.min(ans, Math.min(stmin[a][0], stmin[b][0]));
 		return ans;
 	}
 
